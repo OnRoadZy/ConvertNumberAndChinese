@@ -1,5 +1,5 @@
 ;chinese-number.rkt
-;阿拉伯数字与中文的转换。
+;中文数字与阿拉伯数字的转换。
 #lang racket
 
 (provide
@@ -33,9 +33,9 @@
 (define (chinese->number ch-str #:style [tag 'normal])
   ;根据参数情况设置全局chinese-vector值：
   (set! chinese-vector
-        (cond
-          [(equal? tag 'normal) chinese-number]
-          [(equal? tag 'capitalization) chinese-t-number]
+        (case tag
+          ['normal chinese-number]
+          ['capitalization chinese-t-number]
           [else (display "#:style参数错误。")]))
   (if (equal? ch-str "")
       0
@@ -168,8 +168,6 @@
             ;取得量词对应的两级数字：
             (level (vector-ref number-vector unit-pos))]
        (cond
-         ;最后2个字符，必然是数字和量词组合：
-         [(= len 2) (* level num)]
          ;原定量词位置为数字,则忽略量词直接作为数字加上:
          [(and (>= unit-pos 0) (<= unit-pos 9))
           (+ level

@@ -36,65 +36,81 @@
 (define-syntax-rule (qian-len) 4);千
 (define-syntax-rule (wan-len) 8);万
 (define-syntax-rule (yi-len) 16);亿
+
 ;--------------------------------------------------------
 ;将数字转化为中文字串：
 (define (number->chinese num #:style [tag 'normal])
   ;根据参数情况设置全局chinese-vector值：
   (set! chinese-vector
-        (cond
-          [(equal? tag 'normal) chinese-number]
-          [(equal? tag 'capitalization) chinese-t-number]
+        (case tag
+          ['normal chinese-number]
+          ['capitalization chinese-t-number]
           [else (display "#:style参数错误。")]))
   (if (= num 0) ;检测是否为0。
       (vector-ref chinese-vector 0);零
       (parse-number-section (number->string num))))
 
-;解析千分节数：
+;解析数字分节：
 (define (parse-number-section num-str)
   (if (<= (string-length num-str) (qian-len));千级以内的数
       (parse-section-qian num-str)
-      (let [(qian-rest-len (- (string-length num-str) (qian-len)))]
+      (let [(qian-rest-len
+             (- (string-length num-str) (qian-len)))]
         (string-append
          (parse-section-wan (substring num-str 0 qian-rest-len))
-         (vector-ref chinese-vector (wan-id));万
          (parse-section-qian (substring num-str qian-rest-len))))))
 
 ;解析万分节数：
 (define (parse-section-wan num-str)
   (if (<= (string-length num-str) (qian-len));千级以内的数
-      (parse-number-section num-str)
-      (let [(wan-rest-len (- (string-length num-str) (qian-len)))]
-        (string-append (parse-section-yi
-                        (substring num-str 0 wan-rest-len))
-                       (vector-ref chinese-vector (yi-id));亿
-                       (parse-section-wan
-                        (substring num-str wan-rest-len))))))
+      (let [(ch-str (parse-number-section num-str))]
+        (string-append
+         ch-str
+         (if (equal? ch-str "")
+             ""
+             (vector-ref chinese-vector (wan-id)))));万
+      (let [(wan-rest-len
+             (- (string-length num-str) (qian-len)))]
+        (string-append
+         (parse-section-yi (substring num-str 0 wan-rest-len))
+         (parse-section-wan (substring num-str wan-rest-len))))))
 
 ;解析亿分节数：
 (define (parse-section-yi num-str)
   (if (<= (string-length num-str) (wan-len));万级以内的数
-      (parse-number-section num-str)
-      (let [(yi-rest-len (- (string-length num-str) (wan-len)))]
+      (let [(ch-str (parse-number-section num-str))]
+        (string-append
+         ch-str
+         (if (equal? ch-str "")
+             ""
+             (vector-ref chinese-vector (yi-id)))));亿
+      (let [(yi-rest-len
+             (- (string-length num-str) (wan-len)))]
         (string-append
          (parse-section-zhao (substring num-str 0 yi-rest-len))
-         (vector-ref chinese-vector (zhao-id));兆
          (parse-section-yi (substring num-str yi-rest-len))))))
 
 ;解析兆分节数：
 ;兆分节数会形成反复出现。
 (define (parse-section-zhao num-str)
-   (if (<= (string-length num-str) (yi-len));亿级以内的数
-       (parse-number-section num-str) ;重复单个亿级数据转化
-       (let [(zao-rest-len (- (string-length num-str) (yi-len)))]
-         (string-append
-          (parse-section-zhao (substring num-str 0 zao-rest-len))
-          (vector-ref chinese-vector (zhao-id));兆
-          (parse-section-zhao (substring num-str zao-rest-len))))))
+  (if (<= (string-length num-str) (yi-len));亿级以内的数
+      (let [(ch-str (parse-number-section num-str))]
+        (string-append
+         ch-str
+         (if (equal? ch-str "")
+             ""
+             (vector-ref chinese-vector (zhao-id)))));兆
+      (let [(zao-rest-len
+             (- (string-length num-str) (yi-len)))]
+        (string-append
+         (parse-section-zhao (substring num-str 0 zao-rest-len))
+         ;重复兆分节
+         (parse-section-zhao (substring num-str zao-rest-len))))))
 
-;解析一个千以内的数字字串的片段：
+;解析千分节数片段：
 (define (parse-section-qian num-str)
   (cond
-    [(= (string->number num-str) 0) ""] ;整段长度为零，转化为空值。
+    [(= (string->number num-str) 0) ""] ;这个数0，转化为空值，并不加量词。
     [(= (string-length num-str) 1) ;为最后一个字符，在后边加上量词。
      (generate-num-chinese (substring num-str 0 1)
                            (string-length num-str))]
@@ -128,10 +144,11 @@
 ;根据数字位数生成量词（千以内）：
 (define (convert-level-chinese len)
   (cond
-    [(= (string-length "1") len) ""]
-    [(= (string-length "10") len)
+    [(= len (string-length "1")) ""]
+    [(= len (string-length "10"))
      (vector-ref chinese-vector (shi-id))]
-    [(= (string-length "100") len)
+    [(= len (string-length "100"))
      (vector-ref chinese-vector (bai-id))]
-    [(= (string-length "1000") len)
-     (vector-ref chinese-vector (qian-id))]))
+    [(= len (string-length "1000"))
+     (vector-ref chinese-vector (qian-id))]
+    [else (display "没有对应长度的分节。")]))
