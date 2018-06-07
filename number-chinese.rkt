@@ -110,7 +110,7 @@
 ;解析千分节数片段：
 (define (parse-section-qian num-str)
   (cond
-    [(= (string->number num-str) 0) ""] ;这个数0，转化为空值，并不加量词。
+    [(= (string->number num-str) 0) ""] ;这个数为0，转化为空值，并不加量词。
     [(= (string-length num-str) 1) ;为最后一个字符，在后边加上量词。
      (generate-num-chinese (substring num-str 0 1)
                            (string-length num-str))]

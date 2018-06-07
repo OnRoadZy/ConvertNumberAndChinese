@@ -28,6 +28,7 @@
 (define-syntax-rule (wan-id) 13);万
 (define-syntax-rule (yi-id) 14);亿
 (define-syntax-rule (zhao-id) 15);万
+
 ;-----------------------------------------
 ;将中文字串转化为数字：
 (define (chinese->number ch-str #:style [tag 'normal])
